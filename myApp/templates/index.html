@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Auto Image Labeler</title>
+    <style>
+        :root {
+            --fg-color: #413eb0;
+            --bg-color: #F5FAFA;
+        }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-size: 1.2rem;
+      display: flex;
+      flex-wrap: wrap;
+      min-height: 100vh;
+      color: var(--fg-color); /* <-- new! */
+      background-color: var(--bg-color); /* <-- new! */
+      font-family: sans-serif;
+    }
+
+
+    /*
+      =====================================
+      Container styles
+      =====================================
+    */
+    .container {
+      /* Layout stuff unrelated to demo */
+      padding: 2rem;
+      text-align: center;
+      width: 50%;
+    }
+
+    .container--inverted {
+      /* Change values of CSS props within this class */
+      --fg-color: #F5FAFA;
+      --bg-color: #413eb0;
+
+      color: var(--fg-color);
+      background-color: var(--bg-color);
+    }
+
+
+    /*
+      =====================================
+      Button styles
+      =====================================
+    */
+    button {
+      padding: 0.5rem 2rem;
+      border: 0.2rem solid var(--fg-color);
+      border-radius: 0.5rem;
+
+      /* match default body styles */
+      font-size: inherit;
+      color: var(--bg-color);
+      background-color: var(--fg-color);
+    }
+
+    button:active {
+      /* Invert all colors when pressed */
+      color: inherit;
+      background-color: inherit;
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>Automatic image annotation using our pretrained models:</p>
+        <form action="automatic" method="post">
+            {% csrf_token %}
+            <button type="submit">
+                <span>Get Started</span>
+            </button>
+        </form>
+        <br><br><br><br><br><br>
+        <br>
+        <br>
+        <br>
+        <div>
+        <p>To build your own model from annotated images</p>
+            <a href="https://colab.research.google.com/drive/1ZH5HEC9XtmIwugoY53cMOcaz-fVUxb02"><button>Click Here</button></a>
+    </div>
+    </div>
+
+    <div class="container container--inverted">
+        <p>Manual annotation using our image annotation tool:</p>
+        <form action="manual" method="post">
+            {% csrf_token %}
+            <button type="submit">
+                <span>Get Started</span>
+            </button>
+        </form>
+
+    </div>

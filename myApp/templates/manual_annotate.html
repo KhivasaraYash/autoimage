@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Auto Image Labeler</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.6.0/p5.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.11/addons/p5.dom.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style type="text/css">
+        .main {
+            margin:0;
+            font-size: 100%;
+            font-family: "verdana", serif
+        }
+        .w3-container {
+            margin-left:85%;
+            float: right;
+            width: 20%;
+            margin-top: 5.5%;
+            height: 10px;
+        }
+         .sidenav {
+            height: 90%;
+            width: 18%;
+            position: fixed;
+            z-index: 10;
+            float: left;
+            padding-top: 20px;
+            margin-top: 3%;
+            box-shadow: 5px 0 5px lightgrey;
+        }
+        .sidenav-button {
+            background-color: #42ad2a;
+            margin-top: 5px;
+            font-size: 17px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            width: 220px;
+            height: 35px;
+        }
+        .btn {
+              background-color: DodgerBlue;
+              border: none;
+              color: white;
+              padding: 5px 5px;
+              font-size: 16px;
+              cursor: pointer;
+            }
+
+/* Darker background on mouse-over */
+            .btn:hover {
+              background-color: RoyalBlue;
+            }
+
+
+        .container1 {
+
+            float: left;
+            width: 60%;
+            height: 60%;
+            position: fixed;
+            margin-left: 22%;
+            margin-top: 20.4%;
+            align-content: center;
+        }
+        a {
+   text-decoration: none;
+   display: inline-block;
+   padding: 20px;
+   font-size: 35px;
+   width: 40px;
+   text-align: center;
+}
+.back:hover {
+   background-color: #42ad2a;
+   color: black;
+}
+.next:hover {
+   background-color: #42ad2a;
+   color: white;
+}
+.back {
+   border-radius: 170%;
+   background-color: #42ad2a;
+   color: black;
+}
+.next {
+   border-radius: 170%;
+   background-color: #42ad2a;
+   color: white;
+}
+    </style>
+
+</head>
+<body class="main" style="background-color: #F5FAFA;>
+
+    <div>
+        <span style="vertical-align: middle;"><h1 style="color: white;background-color: #413eb0; text-align: center; line-height: 70px;padding-left: 10px">Auto Image Labeler</h1></span>
+    </div>
+    <div class="section">
+    <div class="sidenav">
+
+    <form action="manual_upload" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" multiple accept="image/*" id="finput">
+        </br>
+        <button type="submit" class="sidenav-button" id="submit_upload">Upload</button>
+        </br>
+        <button onclick="download_csv()" class="sidenav-button" >Download CSV</button>
+        </br>
+        <button class="sidenav-button" id="clear" onclick="clearData()">Clear</button>
+    </form>
+    </div>
+<!--    <button id="next">Next</button>-->
+<!--    <button id="prev">Previous</button>-->
+    <div class="w3-container">
+        <div class="box" id="box" style="border:10px; background-color:#87CEFA; text-allign:center; left-padding:10px;">
+
+        </div>
+        <button type="submit" id="saveData" class="sidenav-button" onclick="saveInfo()">Save</button>
+
+    </div>
+    </div>
+    <div class="container1">
+        <img src="" id="ress" style="margin-top: 10px">
+        <div class="buttons" id="buttons">
+            <button class="next" id="prev"><</button>
+
+            <button  class="next" id="next" style="margin-left: 80%;">></button>
+
+        </div>
+    </div>
+
+</body>
+
+
+
+
+
+<script>
+
+
+    let curr,targ;
+    let img;
+    let testImgs = [];
+    let annotate_coordinate=[];
+    let currInd = 0;
+    let res = []
+    let h1;
+    let w1;
+    function preload() {
+        //img = loadImage('https://upload.wikimedia.org/wikipedia/commons/e/eb/Blank.jpg');
+        if (testImgs.length > 0) {
+            img = loadImage(testImgs[currInd].img);
+            w1=dd[currInd][0];
+            h1=dd[currInd][1];
+
+            console.log(h1,w1);
+            {#console.log(testImgs);#}
+        }
+    }
+
+
+
+    function setup() {
+
+        let cnv = createCanvas(600, 600);
+        cnv.position(350,100);
+        curr = createVector(0,0);
+        targ = createVector(0,0);
+    }
+
+
+    function draw() {
+
+
+
+        background(208,208,208,127);
+        if(img){
+        image(img, 0, 0);
+        }
+        // Draw the coordinates right by the mouse cursor
+        fill("Salmon");
+        textSize(16);
+        textAlign(CENTER);
+        text("(" + floor(mouseX) + ", " + floor(mouseY) + ")", mouseX, mouseY);
+        stroke(8);
+        noFill();
+        strokeWeight(2);
+        if(targ.x>0){
+            rect(curr.x,curr.y,targ.x-curr.x,targ.y-curr.y);
+        }
+    for(i=0;i<annotate_coordinate.length;i++){
+        rect(annotate_coordinate[i][4],annotate_coordinate[i][5],annotate_coordinate[i][6]-annotate_coordinate[i][4],annotate_coordinate[i][7]-annotate_coordinate[i][5]);
+    }
+    //console.log(curr.x);
+    }
+
+    function mousePressed(){
+        curr.x = mouseX;
+        curr.y = mouseY;
+        targ.x = 0;
+        targ.y = 0;
+
+
+    }
+    let i=0;
+    let bInd=0;
+    allData=[]
+    let count=0;
+    let saveFlag = 0;
+    let flag1=true;
+
+    function mouseReleased(){
+        targ.x = mouseX;
+        targ.y = mouseY;
+    a=[];
+    if(check_co(curr.x,curr.y,targ.x,targ.y)){
+        a.push(testImgs[currInd].imgName);
+        a.push(targ.x-curr.x);
+        a.push(targ.y-curr.y);
+        a.push("");
+        a.push(curr.x);
+        a.push(curr.y);
+        a.push(targ.x);
+        a.push(targ.y);
+        annotate_coordinate.push(a);
+        allData.push(a);
+        if(count>=0){
+            multiplyNode(document.querySelector('.box'), count, true);
+            count=count+1;
+        }
+    }
+
+    }
+    function mouseDragged() {
+
+        targ.x = mouseX;
+        targ.y = mouseY;
+    }
+
+
+    class ImageHandler {            //class to hold info about image and its labels
+        constructor(imag,name) {
+            this.imgName = name;
+            this.img = imag;
+            this.annotate = [];     //array of ManualAnnotate class to store multiple labels in a image
+        }
+    }
+
+    class ManualAnnotate {           // class to store image label information
+        constructor(pos1 , pos2, label) {
+
+            this.pos = createVector(pos1.x.pos1.y);
+            this.targ = createVector(pos2.x.pos2.y);
+            this.label = label;
+        }
+    }
+    function multiplyNode(node, count, deep) {
+        var division = document.createElement("div");
+        division.setAttribute('id', 'maindiv'+String(count));
+        var input = document.createElement("input");
+        var label = document.createElement("label");
+       // var br = document.createElement("br");
+        var bt=document.createElement("button");
+        label.setAttribute("class","label0");
+        division.setAttribute("style","border: 2px solid black");
+        input.setAttribute('type', 'text');
+        input.setAttribute('id','div'+String(count));
+       // label.setAttribute("style","float:right");
+        //input.setAttribute("style","float:right");
+        label.innerHTML= "Enter Class: ";
+        bt.setAttribute('type','button');
+        bt.setAttribute("id",'bt'+String(count));
+        bt.setAttribute("class",'btn fa fa-close');
+        bt.setAttribute("value",count);
+        //bt.setAttribute("style","float:right");
+       // bt.setAttribute("class","fa fa-close");
+        bt.setAttribute("onClick",'cutFunction(this.value)');
+        let parent = document.getElementById("box");
+        division.appendChild(label)
+        division.appendChild(input);
+       // division.appendChild(br);
+        division.appendChild(bt);
+        parent.appendChild(division);
+        {#for (var i = 0, copy; i < count; i++) {#}
+        {#    copy = node.cloneNode(deep);#}
+        {#    node.parentNode.insertBefore(copy, node);}#}
+    }
+ function getConfirmation() {
+               var retVal = confirm("Do you want to overwrite labels?");
+               if( retVal == true ) {
+                  //document.write ("User wants to continue!");
+                  return true;
+               } else {
+                 // document.write ("User does not want to continue!");
+                  return false;
+               }
+            }
+
+function saveInfo() {
+    if(saveFlag==2){
+      flag1=getConfirmation();
+    }
+    if(flag1==true){
+    console.log(allData);
+    console.log(bInd);
+    if(bInd==-1){
+    bInd=bInd+1;
+    }
+    let len = annotate_coordinate.length;
+    let labelName = document.getElementById("div0").value;
+    //let j=i;
+    //for (;i<j+len;++j) {
+    //    allData[j].push(document.getElementById("div" + String(j)).value);
+    //}
+    for(let j=0;j<len;++j) {
+        try{
+        allData[j+bInd][3]=document.getElementById("div" + String(j)).value;
+            }
+        catch(err){}
+    }
+    console.log(annotate_coordinate);
+    saveFlag=2;
+    }
+}
+
+function changeId(a) {
+        idValue1="div"+(a-1);
+        let r=document.getElementById(idValue1).value;
+        //console.log(r);
+        idValue2="div"+a;
+            document.getElementById(idValue1).id = idValue2;
+        }
+
+
+//multiplyNode(document.querySelector('.box'), annotate_coordinate.length, true);
+
+function download_csv() {
+    console.log(allData);
+    if(dFlag==0){
+    alert ("Please annotate first to download!");
+    }
+    else{
+    var csv = 'ImageName,width,height,label,xmin,ymin,xmax,ymax\n';
+    allData.forEach(function(row) {
+            if(row[0] != 0 && row[1] != 0 && row[2] != 0 && row[3] != 0) {
+                csv += row.join(',');
+                csv += "\n";
+            }
+    });
+
+    console.log(csv);
+    var hiddenElement = document.createElement('a');
+    hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+    hiddenElement.target = '_blank';
+    hiddenElement.download = 'info.csv';
+    hiddenElement.click();
+    }
+}
+
+function check_co(a1,b1,c1,d1){
+if(a1<0 || b1<0 || c1<0 || d1<0){
+   return false;
+}
+if(a1>601 || b1>601 || c1>601 || d1>601){
+   return false;
+
+}
+return true;
+
+}
+
+ function cutFunction(cnt){
+    console.log(cnt);
+    var myobj1 = document.getElementById("maindiv"+cnt);
+   // var myobj2 = document.getElementById("bt"+cnt);
+    myobj1.remove();
+   // myobj2.remove();
+    annotate_coordinate[cnt][0] = 0;
+    annotate_coordinate[cnt][1] = 0;
+    annotate_coordinate[cnt][2] = 0;
+    annotate_coordinate[cnt][3] = 0;
+    count=count-1;
+    bInd -= 1;
+
+}
+let dd;
+let dFlag=0;
+let token = '{{csrf_token}}';
+    $(document).ready(function () {
+        $('#submit_upload').click(function (event) {
+            dFlag=1;
+            event.preventDefault();
+            let imgs = document.getElementById('finput').files;
+            let imgsLen = document.getElementById('finput').files.length;
+            let files = new FormData();
+            for (let ind=0;ind < imgsLen;++ind) {
+                files.append('images',imgs[ind]);
+            }
+            $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'manual_upload',
+                    type: 'POST',
+                    data: files,
+                    contentType: false,
+                    processData: false,
+                    success : function (data) {
+
+                        let imgData = data['imgs'];      //contains array of
+                        dd = data['dimen'];
+                      //  console.log(dd);
+                        for(let ind=imgData.length-1;ind >= 0;--ind) {
+                            let imgName = data['imgs'][ind][0];
+                            let imginfo = data['imgs'][ind][1];
+                            let imagee = imginfo.split('\'')[1]
+
+                            let imaga = 'data:image/jpeg;base64,' + imagee;
+                            testImgs.push(new ImageHandler(imaga,imgName));
+                            {#append(testImgs,new ImageHandler(imaga));#}
+                        }
+                        preload();
+                        alert('done');
+                    }
+                });
+
+        });
+    });
+    function clearData(){
+    annotate_coordinate = [];
+    allData=[];
+    }
+    function resetAll() {
+       // res.push(annotate_coordinate);
+       i=i+annotate_coordinate.length;
+       bInd += annotate_coordinate.length;
+       annotate_coordinate = [];
+       document.getElementById('box').innerHTML = '';
+       count = 0;
+    }
+
+    $('#next').click(function () {
+
+        currInd += 1;
+
+        resetAll();
+        if(currInd === testImgs.length) {
+                currInd = 0;
+            }
+        preload();
+    });
+    $('#prev').click(function () {
+
+        currInd -= 1;
+
+        resetAll();
+        if (currInd === -1) {
+                currInd = testImgs.length-1;
+            }
+        preload();
+    });
+
+
+</script>
+</html>

@@ -1,0 +1,316 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style type="text/css">
+
+        .main {
+            margin:0;
+            font-size: 100%;
+            font-family: "verdana", serif
+        }
+        .sidenav {
+            height: 100%;
+            width: 18%;
+            position: fixed;
+            z-index: 10;
+            float: left;
+            padding-top: 20px;
+            margin-top: 5.5%;
+            box-shadow: 5px 0 5px lightgrey;
+        }
+        .sidenav button {
+            background-color: #42ad2a;
+            margin-top: 5px;
+            font-size: 17px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            width: 220px;
+            height: 35px;
+        }
+        .topnav {
+            background-color: #413eb0;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+        }
+        .container {
+            text-align: center;
+            float: left;
+            width: 60%;
+            height: 60%;
+            position: fixed;
+            margin-left: 20%;
+            margin-top: 5.4%;
+            align-content: center;
+        }
+        .container img {
+            max-width: 100%;
+            max-height: 100%;
+            margin: auto;
+        }
+        .buttons {
+            display: none;
+        }
+        .buttons button {
+            margin: 5px;
+            background-color: #42ad2a;
+            font-size: 17px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            width: 120px;
+            height: 35px;
+        }
+        .w3-container {
+            display: none;
+            float: right;
+            width: 20%;
+            margin-top: 5.5%;
+            height: 10px;
+        }
+    </style>
+</head>
+
+<body class="main">
+    <div class="topnav">
+        <span style="vertical-align: middle;"><h1 style="color: white; text-align: center">Auto Image Labeller</h1></span>
+    </div>
+
+    <div class="sidenav" style="padding-left: 10px; padding-right: 5px">
+        <form action="upload" id="upload_form" method="post" enctype="multipart/form-data" style="padding: 10px 10px 10px 0px ">
+            {% csrf_token %}
+            <label>Upload Images:</label>
+            <input type="file" id="input_images" name="images" multiple style="display: block; font-size: 15px">
+            <button type="submit" id="submit_images" name="submit"> Submit </button>
+        </form>
+
+        <form action="loadmodel" method="post" style="padding: 10px 10px 10px 0">
+             {% csrf_token %}
+
+            <select id="model_options" style="width: 220px; height: 35px">
+                <option value="0" >Select Model</option>
+                <option value="1" >Coco</option>
+                <option value="2">Chess</option>
+                <option value="3">TechM</option>
+                <option value="4">Custom</option>
+            </select>
+        </form>
+
+        <form action="uploadmodelfiles" id="upload_model" method="post" enctype="multipart/form-data" style="padding: 10px 10px 10px 0px ">
+            {% csrf_token %}
+            <label>Upload Custom Model Files:</label>
+            <input type="file" id="input_files" name="inputfiles" multiple style="display: block; font-size: 15px">
+            <button type="submit" id="submit_files" name="submit"> Submit </button>
+        </form>
+
+        <form action="runmodel" method="post" style="padding: 10px 10px 10px 0">
+            {% csrf_token %}
+            <label>Run model:</label>
+            <button id="run" type="submit">Run</button>
+        </form>
+        <form action="showimages" method="post" style="padding: 10px 10px 10px 0">
+            {% csrf_token %}
+            <label>Show results:</label>
+            <button type="submit" id="show_images">Show</button>
+        </form>
+
+        <form action="save" method="post" style="padding: 10px 10px 10px 0">
+            {% csrf_token %}
+            <label style="font-size: 14px">Save results:</label>
+            <select id="download_options" name="download_options" style="height: 35px">
+                <option value="0" >Download as</option>
+                <option value="Zip" >Zip</option>
+                <option value="CSV">CSV</option>
+            </select>
+            <button type="submit" id="download">Save</button>
+        </form>
+
+    </div>
+
+    <div class="container">
+        <img src="" id="ress" style="margin-top: 10px">
+        <div class="buttons" id="buttons">
+            <button type="submit" id="prev" onclick="previous()">Prev</button>
+            <button type="submit" id="next" onclick="next()">Next</button>
+        </div>
+    </div>
+    <div class="w3-container" id="listcontainer">
+        <p>Image Labels</p>
+        <ul class="w3-ul" id="labellist" style="background: #defabb">
+        </ul>
+    </div>
+
+
+</body>
+    <script>
+
+
+        let result = [];
+        let token = '{{csrf_token}}';
+        $('#upload_model').hide();
+        $(document).ready(function (){
+            $('#submit_images').click(function (event){
+                event.preventDefault();
+                let files = new FormData();
+                let images = document.getElementById('input_images').files;
+                let imgsLen = document.getElementById('input_images').files.length;
+                for (let ind=0;ind < imgsLen;++ind) {
+                    files.append('images',images[ind]);
+                }
+                $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'upload',
+                    type: 'POST',
+                    data: files,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        $('#upload_form').trigger('reset');
+                        alert(data['msg']);
+                    }
+                });
+            });
+        });
+
+        $(document).ready(function (){
+            $('#submit_files').click(function (event) {
+               event.preventDefault();
+               let files = new FormData();
+               let modelFiles = document.getElementById('input_files').files;
+               let filesLen = document.getElementById('input_files').files.length;
+               for (let ind=0;ind < filesLen;++ind) {
+                    files.append('model_files',modelFiles[ind]);
+                }
+               console.log(modelFiles);
+               $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'uploadmodelfiles',
+                    type: 'POST',
+                    data: files,
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+                        $('#upload_model').trigger('reset');
+                        alert(data['msg']);
+                    }
+                });
+            });
+        });
+
+        let displayImgs = []
+        let displayLabels = []
+        let index = 0;
+        $(document).ready(function (){
+            $('#show_images').click(function (event){
+                event.preventDefault();
+
+                $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'showimages',
+                    type: 'POST',
+                    contentType: false,
+                    processData: false,
+                    success: function (data) {
+
+                        displayImgs = [];
+                        displayLabels = [];
+                        index = 0;
+                        for (let ind=0;ind<data['images'].length;++ind) {
+                            let file = data['images'][ind][0];
+                            file = file.split('\'')[1];
+                            let image = 'data:image/jpeg;base64,' + file;
+                            displayImgs.push(image);
+                            displayLabels.push(data['images'][ind][1]);
+                        }
+                        if(data['images'].length > 0) {
+                            document.getElementById('buttons').style.display = "block";
+                            document.getElementById('listcontainer').style.display = "block";
+                            displayData();
+                        }
+                        else {
+                            alert('No image uploaded. Please upload again!');
+                        }
+                    }
+                });
+            });
+        });
+
+        function displayData() {
+            document.getElementById("labellist").innerHTML = '';
+            $('#ress').attr('src',displayImgs[index]);
+            let l = displayLabels[index];
+            for (let ind =0;ind<l.length;++ind) {
+                let node = document.createElement("LI");
+                var textnode = document.createTextNode(l[ind]);
+                node.appendChild(textnode);
+                document.getElementById("labellist").appendChild(node);
+            }
+        }
+
+        function next() {
+            index += 1;
+            if(index === displayImgs.length) {
+                index = 0;
+            }
+            displayData();
+        }
+
+        function previous() {
+            index -= 1;
+            if (index === -1) {
+                index = displayImgs.length-1;
+            }
+            displayData();
+        }
+        $(document).ready(function (){
+            $('#model_options').change(function (){
+
+                let val = document.getElementById("model_options").value;
+                let files = new FormData();
+                files.append('index',val);
+                if (val === '4') {
+                    $('#upload_model').show();
+                }
+                else {
+                    $('#upload_model').hide();
+                }
+                $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'loadmodel',
+                    type: 'POST',
+                    data: files,
+                    contentType: false,
+                    processData: false
+
+                });
+            });
+        });
+        $(document).ready(function (){
+            $('#run').click(function (event){
+                event.preventDefault();
+                $.ajax({
+                    headers: { "X-CSRFToken": token },
+                    url: 'runmodel',
+                    type: 'POST',
+                    contentType: false,
+                    processData: false,
+                    success:function (data) {
+                        alert(data['msg']);
+                    }
+                });
+            });
+        });
+    </script>
+</html>
+
